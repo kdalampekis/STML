@@ -1,0 +1,6 @@
+python-sat>=1.8.dev1
+pytest>=8
+numpy>=1.26
+pandas>=2.0
+torch>=2.2
+datasets>=2.18

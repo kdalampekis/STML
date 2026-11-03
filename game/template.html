@@ -1,0 +1,696 @@
+<title>Wugs and Daxes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&family=Spectral:wght@500;600;700&display=swap">
+<style>
+/* Layout: a logician's workbench. Left: the givens and the sentence you build. Right: the critic's answer and your record. */
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --ink: #141a24; --muted: #5b6676; --line: #d5dbe3;
+  --accent: #1f46b8; --accent-ink: #ffffff; --accent-soft: #e2e8f8;
+  --good: #1e7a4a; --good-soft: #e1f2e8; --warn: #8f5a00; --warn-soft: #f7ebd5;
+  --bad: #b3261e; --bad-soft: #f8e1df; --plain-soft: #e8ecf1;
+  --display: "Spectral", Georgia, "Times New Roman", serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10141b; --surface: #171d26; --ink: #e7ecf3; --muted: #9aa6b6; --line: #2a3340;
+  --accent: #8fa8ff; --accent-ink: #0d1530; --accent-soft: #1e2a4a;
+  --good: #6fd39b; --good-soft: #15301f; --warn: #e8b65a; --warn-soft: #33280f;
+  --bad: #ff8a80; --bad-soft: #3a1916; --plain-soft: #202833; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10141b; --surface: #171d26; --ink: #e7ecf3; --muted: #9aa6b6; --line: #2a3340;
+  --accent: #8fa8ff; --accent-ink: #0d1530; --accent-soft: #1e2a4a;
+  --good: #6fd39b; --good-soft: #15301f; --warn: #e8b65a; --warn-soft: #33280f;
+  --bad: #ff8a80; --bad-soft: #3a1916; --plain-soft: #202833; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.01em; }
+h2 { font-size: 22px; }
+h3 { font-size: 13px; font-family: var(--mono); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+p { margin: 0; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; font-weight: 700; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.link { border: none; background: none; padding: 4px 0; color: var(--accent); font-weight: 700; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; margin-bottom: 16px; }
+.brand { font-family: var(--display); font-size: 22px; font-weight: 700; }
+.save { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.save::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.save[data-s="saved"]::before { background: var(--good); }
+.save[data-s="saving"]::before { background: var(--warn); }
+.save[data-s="error"]::before, .save[data-s="local"]::before { background: var(--bad); }
+
+/* welcome */
+.hero { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+.hero .lede { font-size: 18px; max-width: 34em; }
+.rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; max-width: 38em; }
+.sample { font-family: var(--display); font-size: 19px; line-height: 1.6; }
+.sample .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-right: 8px; }
+label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700; }
+input[type=text], textarea, select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+textarea { width: 100%; min-height: 70px; resize: vertical; }
+
+/* play layout */
+.levelbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 14px; }
+.dots { display: flex; gap: 5px; flex-wrap: wrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); }
+.dot.done { background: var(--muted); }
+.dot.now { border-color: var(--accent); background: var(--accent); }
+.dot.gap { margin-left: 6px; }
+.banner { background: var(--accent-soft); border-radius: var(--r); padding: 10px 14px; margin-bottom: 14px; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .grid, .hero { grid-template-columns: minmax(0, 1fr); } }
+
+.premises { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.prem { display: flex; gap: 10px; align-items: baseline; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; font-family: var(--display); font-size: 17px; }
+.prem .pl { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 2.2em; }
+.prem[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.prem.support { box-shadow: inset 3px 0 0 var(--warn); }
+.axiom { font-size: 13px; color: var(--muted); }
+
+.composer .sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--display); font-size: 18px; }
+.composer select { font-family: var(--display); font-size: 17px; padding: 6px 8px; max-width: 100%; }
+.conf { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.conf input { position: absolute; opacity: 0; pointer-events: none; }
+.conf label { text-align: center; border: 1px solid var(--line); border-radius: 8px; padding: 6px 2px; font-size: 13px; cursor: pointer; background: var(--surface); }
+.conf label b { display: block; font-family: var(--mono); font-size: 15px; }
+.conf input:checked + label { border-color: var(--accent); background: var(--accent-soft); }
+.conf input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* feedback */
+.verdict { border-radius: var(--r); padding: 16px; border: 1px solid var(--line); background: var(--surface); }
+.verdict .claimtxt { font-family: var(--display); font-size: 20px; margin: 8px 0; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 999px; padding: 3px 10px; background: var(--plain-soft); color: var(--muted); }
+.s-target .pill, .pill.s-target { background: var(--good-soft); color: var(--good); }
+.s-weak .pill, .pill.s-weak { background: var(--warn-soft); color: var(--warn); }
+.s-contradicted .pill, .pill.s-contradicted, .s-undetermined .pill, .pill.s-undetermined { background: var(--bad-soft); color: var(--bad); }
+.verdict.s-target { border-color: var(--good); }
+.verdict.s-contradicted, .verdict.s-undetermined { border-color: var(--bad); }
+.verdict.s-weak { border-color: var(--warn); }
+.question { font-size: 16px; }
+.why { border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.proof { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.proof li { display: grid; grid-template-columns: 1.8em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.proof li:last-child { border-bottom: none; font-weight: 700; }
+.proof .n { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.proof .t { font-family: var(--display); font-size: 16px; }
+.proof .r { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.person { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.person.witness { border-color: var(--bad); background: var(--bad-soft); }
+.person .nm { font-weight: 700; }
+.person .ks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.kind { font-family: var(--display); font-size: 14px; background: var(--plain-soft); border-radius: 6px; padding: 1px 7px; }
+
+.found { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.found li { font-family: var(--display); font-size: 16px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.found li.slot { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+.history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+.history li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.history .t { font-family: var(--display); font-size: 15px; }
+.history .c { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+.progress { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.probes { display: flex; flex-direction: column; gap: 12px; }
+.probe { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.probe .stmt { font-family: var(--display); font-size: 19px; }
+.probe .num { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-right: 8px; }
+.choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 640px) { .choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.choices input, .pconf input { position: absolute; opacity: 0; pointer-events: none; }
+.choices label { border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; text-align: center; font-weight: 700; font-size: 14px; cursor: pointer; background: var(--surface); }
+.choices label small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.choices input:checked + label { border-color: var(--accent); background: var(--accent-soft); }
+.choices input:focus-visible + label, .pconf input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pconf { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
+.pconf label { border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; cursor: pointer; font-family: var(--mono); color: var(--ink); background: var(--surface); }
+.pconf input:checked + label { border-color: var(--accent); background: var(--accent-soft); }
+.pconf.off { opacity: 0.4; pointer-events: none; }
+.probe.done.right { border-color: var(--good); }
+.probe.done.wrong { border-color: var(--bad); }
+.probe.done.abstain { border-color: var(--warn); }
+.probe .result { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.probe.done .choices, .probe.done .pconf { pointer-events: none; }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+.json { width: 100%; min-height: 160px; font-family: var(--mono); font-size: 12px; }
+@media (prefers-reduced-motion: no-preference) { .verdict { animation: rise 180ms ease-out; } }
+@keyframes rise { from { transform: translateY(4px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="brand">Wugs and Daxes</span>
+    <span class="row"><span class="save" id="save" data-s="idle">Not started</span><button class="btn small" id="dlNow" hidden>Download log</button></span>
+  </header>
+
+  <!-- WELCOME -->
+  <section id="welcome" class="stack">
+    <div class="hero">
+      <div class="stack">
+        <h1>Find out what must be true about things you have never seen.</h1>
+        <p class="lede">Each world is full of made-up kinds. You get a few true statements about them. Your job is to work out what else follows, and only what follows.</p>
+        <ol class="rules">
+          <li>The premises are true. Every kind has at least one member.</li>
+          <li>Propose a statement only if it <b>must</b> be true given the premises, not just if it could be.</li>
+          <li>Before each answer, rate how sure you are. You can also tap the premises you used and say why.</li>
+          <li>A critic replies. When you are wrong it first asks you a question; tap <b>Show why</b> to see the full answer.</li>
+          <li>After each world comes a short test: 4 statements to judge as <b>must be true</b>, <b>must be false</b>, <b>can't tell from the premises</b>, or <b>I don't know yet</b>. An honest "I don't know yet" scores better than a wrong answer.</li>
+          <li>Then write a sentence about what you noticed. There are 5 levels and 3 worlds per level.</li>
+        </ol>
+      </div>
+      <div class="panel stack">
+        <h3>Example world</h3>
+        <p class="sample"><span class="tag">P1</span>All wugs are daxes<br><span class="tag">P2</span>All daxes are feps</p>
+        <p>Does <i>All wugs are feps</i> follow? Does <i>All feps are wugs</i>? The critic will tell you, and show you a world that proves it.</p>
+        <label class="field" for="participant">Participant code
+          <input type="text" id="participant" value="pilot-01" autocomplete="off" maxlength="40">
+        </label>
+        <p class="axiom">Your moves, confidence ratings and notes are recorded to study how people learn logic. Use a code, not your name.</p>
+        <div class="row">
+          <button class="btn primary" id="start">Start level 1</button>
+          <button class="btn" id="resume" hidden>Continue</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAY -->
+  <section id="play" hidden>
+    <div class="levelbar">
+      <h2 id="lvTitle">Level 1</h2>
+      <div class="dots" id="dots" aria-label="Progress through worlds"></div>
+      <span class="progress" id="progress"></span>
+    </div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="grid">
+      <div class="stack">
+        <div class="panel stack">
+          <h3>Premises</h3>
+          <ul class="premises" id="premises"></ul>
+          <p class="axiom">Also true: every kind has at least one member. Tap a premise to mark that you used it.</p>
+        </div>
+        <form class="panel stack composer" id="composer">
+          <h3>Your claim</h3>
+          <div class="sentence">
+            <select id="fForm" aria-label="Quantifier"></select>
+            <select id="fA" aria-label="First kind"></select>
+            <span id="fCop">are</span>
+            <select id="fB" aria-label="Second kind"></select>
+          </div>
+          <fieldset class="stack" style="border:none;padding:0;margin:0">
+            <legend class="axiom" style="margin-bottom:6px">How sure are you that this must be true?</legend>
+            <div class="conf" id="conf"></div>
+          </fieldset>
+          <label class="field" for="why"><span>Why? <span class="muted" style="font-weight:400">(optional)</span></span>
+            <textarea id="why" placeholder="e.g. P1 puts every wug inside the daxes, and P2 puts every dax inside the feps"></textarea>
+          </label>
+          <div class="row">
+            <button class="btn primary" id="propose" type="submit" disabled>Propose</button>
+            <span class="axiom" id="hint">Pick a confidence level first.</span>
+          </div>
+        </form>
+      </div>
+      <div class="stack">
+        <div id="verdict" class="verdict">
+          <span class="pill">Waiting</span>
+          <p class="claimtxt muted">Your first claim will be judged here.</p>
+          <p class="muted">Start with the simplest thing you can see that must be true.</p>
+        </div>
+        <div class="panel stack">
+          <div class="row" style="justify-content:space-between">
+            <h3>Conclusions found</h3>
+            <span class="progress" id="foundCount"></span>
+          </div>
+          <ul class="found" id="found"></ul>
+        </div>
+        <div class="panel stack">
+          <h3>Your attempts</h3>
+          <ul class="history" id="history"><li class="muted">None yet.</li></ul>
+        </div>
+        <div class="row">
+          <button class="btn" id="skip">Finish this world</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBE -->
+  <section id="probe" class="stack" hidden>
+    <div class="levelbar"><h2 id="pTitle">Test round</h2><span class="progress" id="pProgress"></span></div>
+    <p>Judge each statement using the premises below. Say <b>I don't know yet</b> when you cannot settle it; that is better than guessing wrong.</p>
+    <div class="grid">
+      <div class="panel stack">
+        <h3>Premises</h3>
+        <ul class="premises" id="pPremises"></ul>
+        <p class="axiom">Also true: every kind has at least one member.</p>
+      </div>
+      <div class="stack">
+        <div class="probes" id="probes"></div>
+        <div class="row"><button class="btn primary" id="pCheck" disabled>Check my answers</button><button class="btn primary" id="pNext" hidden>Continue</button><span class="axiom" id="pHint">Answer all four first.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REFLECT -->
+  <section id="reflect" class="stack" hidden>
+    <h2 id="rTitle">World complete</h2>
+    <div class="grid">
+      <div class="panel stack">
+        <p id="rSummary"></p>
+        <label class="field" for="reflection">In your own words: what pattern of reasoning did you use or discover in this world?
+          <textarea id="reflection" placeholder="e.g. 'all' only passes down a chain in one direction"></textarea>
+        </label>
+        <div class="row"><button class="btn primary" id="next">Next world</button></div>
+      </div>
+      <div class="panel stack" id="missedBox">
+        <h3>Conclusions you did not find</h3>
+        <ul class="found" id="missed"></ul>
+        <p class="axiom" id="lesson"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section id="done" class="stack" hidden>
+    <h1>All worlds done.</h1>
+    <p class="lede" id="dSummary"></p>
+    <div class="panel stack">
+      <h3>Your learning log</h3>
+      <p id="dSave"></p>
+      <div class="row"><button class="btn primary" id="download">Download log (JSON)</button><button class="btn" id="copy" hidden>Copy log</button></div>
+      <textarea class="json" id="jsonOut" readonly hidden aria-label="Learning log JSON"></textarea>
+    </div>
+  </section>
+</div>
+
+<script type="application/json" id="stml-data">/*__DATA__*/</script>
+<script>
+(() => {
+  "use strict";
+  const DATA = JSON.parse(document.getElementById("stml-data").textContent);
+  const EPS = DATA.episodes;
+  const SCHEMA = "stml-log/1";
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+  const FORM_LABEL = { all: "All", no: "No", some: "Some", some_not: "Some" };
+  const STATUS_LABEL = { target: "Follows: new conclusion", weak: "True, but weak", premise: "Already given", trivial: "True but empty",
+    contradicted: "Cannot be true", undetermined: "Does not follow" };
+  const RULE_NAME = (r) => r.charAt(0).toUpperCase() + r.slice(1);
+  const CONF = [["1", "guess"], ["2", "unsure"], ["3", "maybe"], ["4", "fairly"], ["5", "certain"]];
+
+  // ---------- session + logging ----------
+  let S = null; // session state
+  const docs = {}; // docId -> log document
+  let db = null, uid = null, saveState = "idle";
+  const dirty = new Set(); let flushing = false, flushTimer = null;
+
+  function setSave(s, msg) {
+    saveState = s;
+    const m = { idle: "Not started", ready: "Saving to your account", saving: "Saving…", saved: "Saved", local: "Saved on this device only", error: "Not saved yet, will retry" };
+    $("save").dataset.s = s; $("save").textContent = msg || m[s];
+  }
+  let localServer = false;
+  async function initStore() {
+    try {
+      if (!window.claude || typeof window.claude.use !== "function") {
+        // Played outside claude.ai. If started with scripts/play_local.py, logs go to the logs/ folder.
+        try {
+          const r = await fetch("api/ping", { cache: "no-store" });
+          const j = r.ok ? await r.json() : null;
+          if (j && j.stml) { localServer = true; setSave(S ? "ready" : "idle", "Saving to the logs folder"); if (S) { Object.keys(docs).forEach((k) => dirty.add(k)); scheduleFlush(); } return; }
+        } catch {}
+        setSave("local", "Not saved to a file: use Download log"); $("dlNow").hidden = false; return;
+      }
+      const [d, u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+      const id = u ? await u.id() : null;
+      if (!d || !id) { setSave("local"); return; }
+      db = d; uid = id; setSave(S ? "ready" : "idle");
+      if (S) { Object.keys(docs).forEach((k) => dirty.add(k)); scheduleFlush(); }
+    } catch { setSave("local"); }
+  }
+  function scheduleFlush() { clearTimeout(flushTimer); flushTimer = setTimeout(flush, 600); }
+  async function flush() {
+    if ((!db && !localServer) || flushing || !dirty.size) return;
+    flushing = true; setSave("saving");
+    try {
+      for (const id of [...dirty]) {
+        dirty.delete(id);
+        if (localServer) {
+          const r = await fetch("api/log", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ participant: S.participant, doc_id: id, doc: docs[id] }) });
+          if (!r.ok) throw { code: "unavailable" };
+        } else {
+          await db.doc(`runs/${uid}/logs/${id}`).set(JSON.parse(JSON.stringify(docs[id])));
+        }
+      }
+      setSave("saved", localServer ? "Saved to the logs folder" : undefined);
+    } catch (e) {
+      Object.keys(docs).forEach((k) => dirty.add(k));
+      setSave("error", e && e.code === "quota_exceeded" ? "Storage full: download your log" : undefined);
+      if (!e || e.code === "unavailable") setTimeout(flush, 3000 + Math.random() * 2000);
+    }
+    flushing = false;
+    if (dirty.size && saveState === "saved") scheduleFlush();
+  }
+  function sessionMeta() { return { id: S.sid, participant: S.participant, started_at: S.started, game_version: DATA.version, user_agent: navigator.userAgent.slice(0, 160) }; }
+  function log(type, fields) {
+    const ep = EPS[S.idx];
+    const ev = Object.assign({ type, t: Date.now() - S.t0, ts: new Date().toISOString(), episode: ep ? ep.id : null }, fields || {});
+    S.events.push(ev);
+    const docId = `${S.sid}_${ev.episode || "session"}`;
+    if (!docs[docId]) docs[docId] = { schema: SCHEMA, session: sessionMeta(), episode: ev.episode, events: [] };
+    docs[docId].events.push(ev);
+    store.set("stml-progress", JSON.stringify({ sid: S.sid, participant: S.participant, started: S.started, t0: S.t0, idx: S.idx, events: S.events }));
+    if (db || localServer) { dirty.add(docId); scheduleFlush(); }
+  }
+  function fullLog() { return { schema: SCHEMA, session: sessionMeta(), events: S.events }; }
+
+  // ---------- rendering helpers ----------
+  const ep = () => EPS[S.idx];
+  const crit = (key) => ep().critiques[key];
+  const claimKey = () => `${$("fForm").value}:${$("fA").value}:${$("fB").value}`;
+
+  function renderDots() {
+    const box = $("dots"); box.replaceChildren();
+    EPS.forEach((e, i) => {
+      const d = el("span", "dot" + (i < S.idx ? " done" : "") + (i === S.idx ? " now" : "") + (i > 0 && EPS[i - 1].level !== e.level ? " gap" : ""));
+      d.title = e.id; box.append(d);
+    });
+  }
+  function renderPremises() {
+    const ul = $("premises"); ul.replaceChildren();
+    ep().premises.forEach((p, i) => {
+      const li = el("li"); const b = el("button", "prem"); b.type = "button"; b.id = `prem-${i}`;
+      b.setAttribute("aria-pressed", S.used.has(i) ? "true" : "false");
+      b.append(el("span", "pl", `P${i + 1}`), el("span", null, p.text));
+      b.addEventListener("click", () => { S.used.has(i) ? S.used.delete(i) : S.used.add(i); b.setAttribute("aria-pressed", S.used.has(i) ? "true" : "false"); });
+      li.append(b); ul.append(li);
+    });
+  }
+  function markSupport(idx) {
+    ep().premises.forEach((_, i) => $(`prem-${i}`).classList.toggle("support", idx.includes(i)));
+  }
+  function renderComposer() {
+    const e = ep();
+    const f = $("fForm"); f.replaceChildren();
+    e.claim_forms.forEach((k) => { const o = el("option", null, k === "some_not" ? "Some … not" : FORM_LABEL[k]); o.value = k; f.append(o); });
+    for (const id of ["fA", "fB"]) {
+      const s = $(id); s.replaceChildren();
+      e.names.forEach((n, i) => { const o = el("option", null, n); o.value = String(i); s.append(o); });
+    }
+    $("fB").value = "1";
+    syncComposer();
+    const conf = $("conf"); conf.replaceChildren();
+    CONF.forEach(([v, lab]) => {
+      const inp = el("input"); inp.type = "radio"; inp.name = "conf"; inp.id = `conf-${v}`; inp.value = v;
+      inp.addEventListener("change", syncComposer);
+      const l = el("label"); l.htmlFor = inp.id; l.append(el("b", null, v), document.createTextNode(lab));
+      conf.append(inp, l);
+    });
+  }
+  function selectedConf() { const c = document.querySelector('input[name="conf"]:checked'); return c ? Number(c.value) : null; }
+  function syncComposer() {
+    $("fCop").textContent = $("fForm").value === "some_not" ? "are not" : "are";
+    const same = $("fA").value === $("fB").value;
+    const ok = !same && selectedConf() != null;
+    $("propose").disabled = !ok;
+    $("hint").textContent = same ? "Choose two different kinds." : selectedConf() == null ? "Pick a confidence level first." : "";
+  }
+  ["fForm", "fA", "fB"].forEach((id) => $(id).addEventListener("change", syncComposer));
+
+  function renderFound() {
+    const e = ep(), ul = $("found"); ul.replaceChildren();
+    const total = e.targets.length;
+    S.found.forEach((k) => ul.append(el("li", null, crit(k).text)));
+    for (let i = S.found.length; i < total; i++) ul.append(el("li", "slot", "?"));
+    $("foundCount").textContent = `${S.found.length} of ${total}`;
+    $("progress").textContent = `World ${e.id}`;
+  }
+  function renderHistory() {
+    const ul = $("history"); ul.replaceChildren();
+    if (!S.tries.length) { ul.append(el("li", "muted", "None yet.")); return; }
+    [...S.tries].reverse().forEach((t) => {
+      const li = el("li");
+      li.append(el("span", `pill s-${t.status}`, STATUS_LABEL[t.status]), el("span", "t", crit(t.key).text), el("span", "c", `sure ${t.conf}/5`));
+      ul.append(li);
+    });
+  }
+  function renderVerdict(key, repeat) {
+    const c = crit(key), box = $("verdict");
+    box.className = `verdict s-${c.status}`; box.replaceChildren();
+    box.append(el("span", "pill", STATUS_LABEL[c.status] + (repeat ? " (again)" : "")), el("p", "claimtxt", c.text), el("p", "question", c.question));
+    const hasWhy = c.proof.length || c.countermodel.length || c.explanation;
+    if (!hasWhy) return;
+    const btn = el("button", "btn link", c.status === "target" ? "See the proof" : "Show why"); btn.type = "button";
+    const why = el("div", "why"); why.hidden = true;
+    btn.addEventListener("click", () => {
+      why.hidden = !why.hidden; btn.textContent = why.hidden ? "Show why" : "Hide";
+      if (!why.hidden) { log("reveal", { claim: key }); markSupport(c.support); }
+    });
+    if (c.countermodel.length) {
+      why.append(el("p", null, "A world where every premise is true:"));
+      const grid = el("div", "people");
+      c.countermodel.forEach((p, i) => {
+        const card = el("div", "person" + (i === c.witness ? " witness" : ""));
+        card.append(el("div", "nm", p.name + (i === c.witness ? ", breaks your claim" : "")));
+        const ks = el("div", "ks"); p.kinds.forEach((k) => ks.append(el("span", "kind", ep().names[k]))); card.append(ks);
+        grid.append(card);
+      });
+      why.append(grid);
+    }
+    if (c.explanation && c.status !== "target") why.append(el("p", null, c.explanation));
+    if (c.proof.length) {
+      why.append(el("p", "muted", c.status === "contradicted" ? "Proof of the opposite:" : "Proof:"));
+      const ol = el("ol", "proof");
+      c.proof.forEach((s, i) => {
+        if (s.rule === "identity") return;
+        const li = el("li"); li.append(el("span", "n", `${i + 1}.`), el("span", "t", s.text));
+        let r;
+        if (s.rule === "premise") r = `P${s.premise + 1}`;
+        else if (s.rule === "existence") r = "kinds have members";
+        else r = `${RULE_NAME(s.rule)} (${s.from.map((x) => x + 1).join(", ")})`;
+        const rs = el("span", "r", r); rs.title = DATA.rules[s.rule] || ""; li.append(rs); ol.append(li);
+      });
+      why.append(ol);
+      const used = [...new Set(c.proof.map((s) => s.rule).filter((r) => DATA.rules[r] && !["premise", "existence", "identity"].includes(r)))];
+      used.forEach((r) => why.append(el("p", "axiom", `${RULE_NAME(r)}: ${DATA.rules[r]}`)));
+    }
+    box.append(btn, why);
+  }
+
+  // ---------- flow ----------
+  function startEpisode() {
+    const e = ep();
+    S.found = []; S.tries = []; S.used = new Set(); S.lastT = Date.now();
+    $("lvTitle").textContent = `Level ${e.level} · ${e.title}`;
+    const first = S.idx === 0 || EPS[S.idx - 1].level !== e.level;
+    const lv = DATA.levels.find((l) => l.level === e.level);
+    if (first) {
+      const forms = lv.claim_forms.map((f) => ({ all: "All … are …", no: "No … are …", some: "Some … are …", some_not: "Some … are not …" }[f]));
+      $("banner").textContent = `New level. Statements you can now use: ${forms.join("  ·  ")}`;
+      $("banner").hidden = false;
+    } else $("banner").hidden = true;
+    renderDots(); renderPremises(); renderComposer(); renderFound(); renderHistory();
+    const v = $("verdict"); v.className = "verdict"; v.replaceChildren(el("span", "pill", "Waiting"), el("p", "claimtxt muted", "Your first claim will be judged here."), el("p", "muted", "Start with the simplest thing you can see that must be true."));
+    $("why").value = "";
+    show("play");
+    log("episode_start", { level: e.level, seed: e.seed });
+  }
+  function show(id) { ["welcome", "play", "probe", "reflect", "done"].forEach((s) => ($(s).hidden = s !== id)); window.scrollTo(0, 0); }
+
+  $("composer").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const key = claimKey(), c = crit(key), conf = selectedConf();
+    if (!c || conf == null) return;
+    const canon = canonical(key);
+    const repeat = S.tries.some((t) => canonical(t.key) === canon);
+    const isNew = c.status === "target" && !S.found.some((k) => canonical(k) === canon);
+    if (isNew) S.found.push(key);
+    S.tries.push({ key, status: c.status, conf });
+    const now = Date.now();
+    log("claim", { claim: key, confidence: conf, used: [...S.used].sort((a, b) => a - b), why: $("why").value.trim(), status: c.status,
+      new_target: isNew, repeat, rt_ms: now - S.lastT });
+    S.lastT = now;
+    renderVerdict(key, repeat); renderFound(); renderHistory(); markSupport([]);
+    S.used.clear(); ep().premises.forEach((_, i) => $(`prem-${i}`).setAttribute("aria-pressed", "false"));
+    $("why").value = ""; document.querySelectorAll('input[name="conf"]').forEach((i) => (i.checked = false)); syncComposer();
+    if (S.found.length === ep().targets.length) setTimeout(() => endEpisode("complete"), 1400);
+  });
+  function canonical(key) { const [f, a, b] = key.split(":"); return (f === "no" || f === "some") && Number(a) > Number(b) ? `${f}:${b}:${a}` : key; }
+
+  $("skip").addEventListener("click", () => endEpisode("skip"));
+  function endEpisode(reason) {
+    if (S.ending) return; S.ending = true;
+    const e = ep(), total = e.targets.length;
+    S.pendingEnd = { reason, found: S.found.length, total };
+    showProbes();
+  }
+  function showReflect() {
+    const e = ep(), total = e.targets.length, reason = S.pendingEnd.reason;
+    $("rTitle").textContent = reason === "complete" ? `World ${e.id} solved` : `World ${e.id} finished`;
+    $("rSummary").textContent = `You found ${S.found.length} of ${total} conclusions in ${S.tries.length} attempts.`;
+    const foundC = new Set(S.found.map(canonical));
+    const missed = e.targets.filter((k) => !foundC.has(canonical(k)));
+    $("missed").replaceChildren(...missed.map((k) => el("li", null, crit(k).text)));
+    $("missedBox").hidden = missed.length === 0;
+    $("lesson").textContent = `This world was about ${e.lesson}.`;
+    $("reflection").value = "";
+    show("reflect");
+  }
+  // ---------- probe round (H3: knowing what you do not know) ----------
+  const ANS = [["true", "Must be true", "it follows"], ["false", "Must be false", "it is ruled out"],
+    ["open", "Can't tell", "premises don't settle it"], ["unknown", "I don't know yet", "honest pass"]];
+  const TRUTH_LABEL = { follows: "It follows", contradicted: "It is ruled out", open: "The premises don't settle it" };
+  const TRUTH_OF = { true: "follows", false: "contradicted", open: "open" };
+  function showProbes() {
+    const e = ep();
+    S.probe = { t0: Date.now(), answers: e.probes.map(() => ({ answer: null, conf: null, t: null })) };
+    $("pTitle").textContent = `Test round · ${e.id}`;
+    $("pProgress").textContent = `${e.probes.length} statements`;
+    const ul = $("pPremises"); ul.replaceChildren();
+    e.premises.forEach((p, i) => { const li = el("li", "prem"); li.append(el("span", "pl", `P${i + 1}`), el("span", null, p.text)); ul.append(li); });
+    const box = $("probes"); box.replaceChildren();
+    e.probes.forEach((pr, i) => {
+      const card = el("div", "probe"); card.id = `probe-${i}`;
+      const st = el("p", "stmt"); st.append(el("span", "num", `${i + 1}`), document.createTextNode(pr.text)); card.append(st);
+      const ch = el("div", "choices"); ch.setAttribute("role", "radiogroup"); ch.setAttribute("aria-label", `Answer for statement ${i + 1}`);
+      ANS.forEach(([v, lab, sub]) => {
+        const inp = el("input"); inp.type = "radio"; inp.name = `pa-${i}`; inp.id = `pa-${i}-${v}`; inp.value = v;
+        inp.addEventListener("change", () => { const a = S.probe.answers[i]; a.answer = v; a.t = Date.now() - S.probe.t0; syncProbe(i); });
+        const l = el("label"); l.htmlFor = inp.id; l.append(document.createTextNode(lab), el("small", null, sub));
+        ch.append(inp, l);
+      });
+      card.append(ch);
+      const pc = el("div", "pconf off"); pc.id = `pconf-${i}`; pc.append(el("span", null, "How sure?"));
+      [1, 2, 3, 4, 5].forEach((v) => {
+        const inp = el("input"); inp.type = "radio"; inp.name = `pc-${i}`; inp.id = `pc-${i}-${v}`; inp.value = String(v);
+        inp.addEventListener("change", () => { S.probe.answers[i].conf = v; syncProbe(i); });
+        const l = el("label"); l.htmlFor = inp.id; l.textContent = String(v); pc.append(inp, l);
+      });
+      pc.append(el("span", null, "1 guess · 5 certain"));
+      card.append(pc, el("div", "result"));
+      box.append(card);
+    });
+    $("pCheck").hidden = false; $("pNext").hidden = true; syncProbe();
+    show("probe");
+  }
+  function syncProbe(i) {
+    if (i != null) $(`pconf-${i}`).classList.toggle("off", S.probe.answers[i].answer === "unknown" || !S.probe.answers[i].answer);
+    const ready = S.probe.answers.every((a) => a.answer && (a.answer === "unknown" || a.conf));
+    $("pCheck").disabled = !ready;
+    $("pHint").textContent = ready ? "" : "Answer all four, with how sure you are, first.";
+  }
+  $("pCheck").addEventListener("click", () => {
+    const e = ep();
+    e.probes.forEach((pr, i) => {
+      const a = S.probe.answers[i];
+      const right = a.answer === "unknown" ? null : TRUTH_OF[a.answer] === pr.truth;
+      log("probe", { claim: pr.key, answer: a.answer, confidence: a.answer === "unknown" ? null : a.conf,
+        truth: pr.truth, correct: right, rt_ms: a.t });
+      const card = $(`probe-${i}`);
+      card.classList.add("done", right == null ? "abstain" : right ? "right" : "wrong");
+      const res = card.querySelector(".result"); res.replaceChildren();
+      const verdict = right == null ? "You passed" : right ? "Right" : "Not right";
+      res.append(el("span", `pill ${right == null ? "s-weak" : right ? "s-target" : "s-undetermined"}`, verdict),
+        el("span", null, TRUTH_LABEL[pr.truth] + "."));
+      const c = e.critiques[pr.key];
+      if (c) res.append(el("p", "axiom", pr.truth === "open" ? c.explanation : (pr.truth === "follows" ? `Follows from ${c.support.map((x) => "P" + (x + 1)).join(", ") || "the fact that kinds have members"}.` : c.explanation)));
+    });
+    $("pCheck").hidden = true; $("pNext").hidden = false; $("pHint").textContent = "";
+  });
+  $("pNext").addEventListener("click", showReflect);
+
+  $("next").addEventListener("click", () => {
+    log("episode_end", Object.assign({}, S.pendingEnd, { reflection: $("reflection").value.trim() }));
+    S.ending = false; S.idx += 1;
+    if (S.idx >= EPS.length) return finish();
+    startEpisode();
+  });
+  function finish() {
+    log("session_end", {});
+    store.set("stml-progress", "");
+    const claims = S.events.filter((e) => e.type === "claim");
+    const right = claims.filter((e) => ["target", "weak", "premise", "trivial"].includes(e.status)).length;
+    $("dSummary").textContent = `${claims.length} claims, ${right} of them correct, across ${EPS.length} worlds. Thank you.`;
+    $("dSave").textContent = db ? "Your log is saved to this page's research store. Download a copy as well if you like."
+      : localServer ? "Your log is saved in the logs folder next to the game. Download a copy as well if you like."
+      : "This copy of the game is not connected to any storage. Download your log and keep the file for training.";
+    show("done"); flush();
+  }
+  async function downloadLog() {
+    if (!S) return;
+    const text = JSON.stringify(fullLog(), null, 1);
+    const name = `stml-log-${S.participant}-${S.sid}.json`;
+    if (window.claude && typeof window.claude.use === "function") {
+      try {
+        const dl = await window.claude.use("downloads");
+        if (dl) { await dl.save({ filename: name, data: text }); return; }
+      } catch (e) { if (e && e.code === "declined") return; }
+    } else {
+      // A local copy of the page: an ordinary browser download works.
+      try {
+        const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+        const a = document.createElement("a"); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000); return;
+      } catch {}
+    }
+    $("jsonOut").value = text; $("jsonOut").hidden = false; $("copy").hidden = false;
+  }
+  $("download").addEventListener("click", downloadLog);
+  $("dlNow").addEventListener("click", downloadLog);
+  $("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("jsonOut").value); $("copy").textContent = "Copied"; }
+    catch { $("jsonOut").select(); }
+  });
+
+  function newSession(participant) {
+    const sid = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    S = { sid, participant, started: new Date().toISOString(), t0: Date.now(), idx: 0, events: [], found: [], tries: [], used: new Set() };
+  }
+  $("start").addEventListener("click", () => {
+    const p = ($("participant").value || "pilot-01").trim().replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 40);
+    newSession(p);
+    if (db || localServer) setSave("ready", localServer ? "Saving to the logs folder" : undefined);
+    log("session_start", { participant: p, n_episodes: EPS.length });
+    startEpisode();
+  });
+  // resume an unfinished session from this device
+  try {
+    const saved = JSON.parse(store.get("stml-progress") || "null");
+    if (saved && saved.sid && saved.idx < EPS.length) {
+      $("resume").hidden = false; $("resume").textContent = `Continue ${saved.participant} at world ${EPS[saved.idx].id}`;
+      $("resume").addEventListener("click", () => {
+        S = { sid: saved.sid, participant: saved.participant, started: saved.started, t0: saved.t0, idx: saved.idx, events: saved.events || [], found: [], tries: [], used: new Set() };
+        for (const ev of S.events) {
+          const id = `${S.sid}_${ev.episode || "session"}`;
+          if (!docs[id]) docs[id] = { schema: SCHEMA, session: sessionMeta(), episode: ev.episode, events: [] };
+          docs[id].events.push(ev);
+        }
+        if (db || localServer) { Object.keys(docs).forEach((k) => dirty.add(k)); scheduleFlush(); }
+        startEpisode();
+      });
+    }
+  } catch {}
+  initStore();
+})();
+</script>

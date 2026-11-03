@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.venv/
+data/raw/
+data/processed/
+logs/
+runs/
+_to_delete/
+.claude/scheduled_tasks.lock
+.DS_Store
